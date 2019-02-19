@@ -53,7 +53,7 @@ def main():
 
     env = Highlow()
     epsilon = [0.0, 0.3, 0.6, 0.9]
-    game_steps = list(range(10, 510, 10))
+    game_steps = list(range(10, 310, 10))
     result = {}
     for e in epsilon:
         agent = Agent(env, e)

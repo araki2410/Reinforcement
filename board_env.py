@@ -4,10 +4,10 @@ class Board():
     def __init__(self, col_size=19, line_size=19):
         self.col_size = col_size
         self.line_size = line_size
-        self.board = np.zeros((self.line_size, self.col_size))
+        self.board = np.zeros((self.line_size, self.col_size), dtype="int32")
 
     def reset(self):
-        self.board = np.zeros((self.line_size, self.col_size))
+        self.board = np.zeros((self.line_size, self.col_size), dtype="int32")
 
     def show_board(self):
         print(self.board)
@@ -22,7 +22,7 @@ class Gomoku():
         self.col_size = col_size
         self.line_size = line_size
         self.board = Board(self.col_size, self.line_size)
-        self.steps = line_size * col_size
+        self.steps = self.line_size * self.col_size
         self.length = length
         
     def actions(self):
@@ -125,7 +125,8 @@ class Gomoku():
 
     def reset(self):
         self.board.reset()
-        
+        self.steps = self.line_size * self.col_size
+
 # hoge = Board(3,3,3)
 # hoge.action(1,1,2)
 # hoge.action(1,0,1)

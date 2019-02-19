@@ -1,5 +1,5 @@
 from board_env import Gomoku
-from gomoku_agent import Agent
+#from gomoku_agent import Agent
 import numpy as np
 
 
@@ -20,7 +20,7 @@ for g in game_steps:
     while not done:
         player = i % len(agents)
         i += 1
-        reward, done, retry= agents[player].act()
+        reward, done, retry = agents[player].act()
 
         if retry:
             # "retry!"
