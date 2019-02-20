@@ -5,14 +5,14 @@ import pickle
 
 class Agent():
     
-    def __init__(self, env, epsilon, player_number=1):
+    def __init__(self, env, epsilon, player_number=1, V={}):
         self.player = player_number
         self.env = env
         self.actions = self.env.actions()
         self.epsilon = epsilon
         self.num_len = 13
         #self.V = np.array([hllist for j in range(self.num_len)])
-        self.V = {}
+        self.V = V
 
     def policy(self, state):
         if random.random() < self.epsilon:
@@ -44,7 +44,8 @@ class Agent():
     def act(self):
         state = self.env.board.board.copy()
         line, col = self.policy(state)
-#        line, col = action
+        self.now_line, self.now_col = line, col ## for demo
+
         reward, done, retry = self.env.step(line, col, self.player)
         next_state = self.env.board.board.copy()
         expected_reward = self.expected_reward(next_state)
@@ -87,10 +88,9 @@ def main(board_lines, board_cols, target_length, epsilon_1, epsilon_2):
     agent2 = Agent(env, ep2, player_number_2)
     agents = [agent1, agent2]
     wins = [0,0,0]  ## logs
+    max_steps = 1000000
     #game_steps = list(range(10, 510, 10))
-    game_steps = list(range(1, 10000, 1))
-    #print(game_steps)
-
+    game_steps = list(range(1, max_steps, 1))
     for g in game_steps:
         env.reset()
         done = False
@@ -109,7 +109,7 @@ def main(board_lines, board_cols, target_length, epsilon_1, epsilon_2):
             wins[0] += 1 ## draw logs
         else:
             winner = (i-1) % 2 + 1
-            print("winner : ", winner,  ", steps:",env.line_size * env.col_size - env.steps)
+            print("winner : ", winner,  ", steps:",env.line_size * env.col_size - env.steps, ", progress:", str(int((g/max_steps)*100))+"%" )
             wins[winner] += 1  ## won logs
 
     print("draw:",wins[0],", win_pl1:",wins[1],", win_pl2:",wins[2])
@@ -120,5 +120,5 @@ if __name__ == "__main__":
     board_lines, board_cols = 3,3
     target_length = 3
     epsilon_1 = 0.2 ## random rate for agent 1
-    epsilon_2 = 0.3 ## random rate for agent 2
+    epsilon_2 = 0.1 ## random rate for agent 2
     main(board_lines, board_cols, target_length, epsilon_1, epsilon_2)

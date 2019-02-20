@@ -10,7 +10,17 @@ class Board():
         self.board = np.zeros((self.line_size, self.col_size), dtype="int32")
 
     def show_board(self):
-        print(self.board)
+        table = ""
+        for line in self.board:
+            output = ""
+            for col in line:
+                if col == 0:
+                    output += " +"
+                else:
+                    output += " "+str(col)
+
+            table += output + "\n"
+        return table
 
     def put_stone(self, line_num, col_num, player):
         self.board[line_num][col_num] = player
