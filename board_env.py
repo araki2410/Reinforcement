@@ -35,7 +35,9 @@ class Gomoku():
         self.steps = self.line_size * self.col_size
         self.length = length
         self.reward_type = reward_type
-        
+        self.winner_rate = 50
+        self.count_rate = 10
+
     def actions(self):
         actions = []
         for i in range(self.line_size):
@@ -44,10 +46,8 @@ class Gomoku():
         return actions
 
     def reward_calc(self, wins, counts):
-        winner_rate = 5
-        count_rate = 0.2
         if self.reward_type == "count":
-            reward = wins * winner_rate + counts * count_rate
+            reward = wins * self.winner_rate + counts * self.count_rate
         else:
             reward = wins
         return reward

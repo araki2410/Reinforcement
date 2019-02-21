@@ -1,4 +1,4 @@
-import random, os
+import random, os, sys
 from board_env import Gomoku
 import numpy as np
 import pickle
@@ -10,14 +10,17 @@ class Agent():
         self.env = env
         self.actions = self.env.actions()
         self.epsilon = epsilon
-        self.num_len = 13
-        #self.V = np.array([hllist for j in range(self.num_len)])
         self.V = V
+        self.game_size = "games"
+        if self.game_size not in self.V:
+            self.V["games"] = 0
+        self.states = [] ## for demo test
 
     def policy(self, state):
         if random.random() < self.epsilon:
             return random.choice(self.actions)
         else:
+#            print(state)
             state = state.reshape(-1).tolist()
             state = str(state)
             if state not in self.V:
@@ -28,8 +31,19 @@ class Agent():
             fixed_num  = np.argmax(mean)
             line = int(fixed_num / self.env.line_size)
             col = fixed_num % self.env.col_size
-#            print(fixed_num, line, col)
+#            print(line, col)
             return line, col
+
+    def show_policy(self, state):
+        state = state.reshape(-1).tolist()
+        state = str(state)
+        if state not in self.V:
+            return "no policy"
+
+        mean = self.V[state][0] / self.V[state][1]
+
+        return mean
+        
 
     def expected_reward(self, next_state):
         next_state = next_state.reshape(-1).tolist()
@@ -51,9 +65,15 @@ class Agent():
         expected_reward = self.expected_reward(next_state)
 
         self.update(state, line, col, reward, expected_reward)
+        if not retry:
+            state = state.reshape(-1).tolist()
+            state = str(state)
+            self.states.append([state, line, col])
+    
         return reward, done, retry
     
     def update(self, state, line, col, reward, expected_reward):
+        self.old_state = state ## for result_update for losser
         state = state.reshape(-1).tolist()
         state = str(state)
         expected_rate = 0.8
@@ -67,8 +87,22 @@ class Agent():
         reward = reward + expected_reward * expected_rate      ## total reward
         self.V[state][0][line][col] += reward
         self.V[state][1][line][col] += 1 ## times of try to put
+        #self.old_line = line ## for demo test
+        #self.old_col = col ## for demo test
 
 
+    def result_update(self, final_reward, rate=0.8):
+        last_state, last_line, last_col = self.states[-1]
+        for state, line, col in self.states[::-1]:
+            self.V[state][0][line][col] += final_reward
+            final_reward = final_reward * rate
+
+        self.V[self.game_size] += 1
+
+        return last_line, last_col
+
+
+#==================
 def save_model(agent):
     model_dir = "Model"
     game_size = str(agent.env.line_size)+"x"+str(agent.env.col_size)
@@ -79,16 +113,15 @@ def save_model(agent):
     f.close
     print("save model:", model_name)
 
-def main(board_lines, board_cols, target_length, epsilon_1, epsilon_2):
+def main(board_lines, board_cols, target_length, epsilon_1, epsilon_2, max_steps=1000, V1={}, V2={}):
     env = Gomoku(board_lines, board_cols, target_length)
     ep1, ep2 = epsilon_1, epsilon_2
     player_number_1 = 1
     player_number_2 = 2
-    agent1 = Agent(env, ep1, player_number_1)
-    agent2 = Agent(env, ep2, player_number_2)
-    agents = [agent1, agent2]
-    wins = [0,0,0]  ## logs
-    max_steps = 1000000
+    agentA = Agent(env, ep1, player_number_1, V1)
+    agentB = Agent(env, ep2, player_number_2, V2)
+    agents = [[agentA, "agentA"], [agentB, "agentB"]]
+    wins = {"draw":0, "agentA":0, "agentB":0}  ## logs
     #game_steps = list(range(10, 510, 10))
     game_steps = list(range(1, max_steps, 1))
     for g in game_steps:
@@ -97,28 +130,59 @@ def main(board_lines, board_cols, target_length, epsilon_1, epsilon_2):
         i = 0
         while not done:
             player = i % len(agents)
-            reward, done, retry = agents[player].act()
+            reward, done, retry = agents[player][0].act()
             i += 1
             if retry:
                 # "retry!"
                 i -= 1
         print(env.board.board)
 
+
         if reward == 0:
             print("draw")
-            wins[0] += 1 ## draw logs
+            wins["draw"] += 1 ## draw logs
+            ## Draw Update
+            ## TODO
+            agents[0][0].result_update(-1) ## First player must win
+            agents[1][0].result_update(3) ## 2nd player's playing is good
         else:
-            winner = (i-1) % 2 + 1
-            print("winner : ", winner,  ", steps:",env.line_size * env.col_size - env.steps, ", progress:", str(int((g/max_steps)*100))+"%" )
+            ## Winner Update 
+            last_line, last_col = agents[player][0].result_update(50) ## win
+            ## Losser Update
+            losser = i%2
+            agents[losser][0].result_update(-3)                                     ## lose
+            agents[losser][0].update(agents[losser][0].old_state, last_line, last_col, 100, 0)  ## lose
+
+            winner = agents[player][1]
+            print("winner : ", winner, ":", player+1,  ", steps:",env.line_size * env.col_size - env.steps, ", progress:", str(int((g/max_steps)*100))+"%" )
             wins[winner] += 1  ## won logs
 
-    print("draw:",wins[0],", win_pl1:",wins[1],", win_pl2:",wins[2])
-    save_model(agent1)
-    save_model(agent2)
+        agents = agents[::-1] ## Change first player
+        for i in range(len(agents)): ## First player number = 1
+            agents[i][0].player=i+1
+
+    print("draw:",wins["draw"],", win_pl1:",wins["agentA"],", win_pl2:",wins["agentB"])
+
+    print("learned games:", agentA.V[agentA.game_size])
+    save_model(agentA)
+#    save_model(agentB)
 
 if __name__ == "__main__":
-    board_lines, board_cols = 3,3
+    V={}
+    args = sys.argv
+    if len(args) > 1:
+        model = args[1]
+        if model.split(".")[-1] == "model":
+            f = open(model, 'rb')
+            V = pickle.load(f)
+#            f.close
+
+    board_lines, board_cols = 3, 3
     target_length = 3
     epsilon_1 = 0.2 ## random rate for agent 1
-    epsilon_2 = 0.1 ## random rate for agent 2
-    main(board_lines, board_cols, target_length, epsilon_1, epsilon_2)
+    epsilon_2 = 0.9 ## random rate for agent 2
+    steps = 301
+
+    V1 = V.copy()
+    V2 = {} #V.copy()
+    main(board_lines, board_cols, target_length, epsilon_1, epsilon_2, steps, V1, V2)
