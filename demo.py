@@ -36,15 +36,16 @@ print('If you put [H], \n\n - H -\n - - -\n - - -\n\nyou type "1,2"\n===========
 while not done:
     player = i % 2
     if players[player] == "you":
+        print("steps:", env.steps)
         print("")
         print(env.board.show_board())
         print("your turn: ")
         try:
             action = input()
             line, col = action.split(",")
-            line, col = int(line), int(col)
-            if line <= line_size and col <= col_size:
-                reward, done, retry = env.step(line-1, col-1, your_num)
+            line, col = int(line)-1, int(col)-1
+            if line <= line_size-1 and col <= col_size-1:
+                reward, done, retry = env.step(line, col, your_num)
                 if retry:
                     i -= 1
             else:
@@ -57,22 +58,30 @@ while not done:
         print(env.board.show_board())
         if done:
             print("you win!")
-            lose_score = -50
+            lose_score = -1
+            players[(i+1)%2].update(players[(i+1)%2].old_state, line, col, 1)  ## lose ... learn last play by winners 
             players[(i+1)%2].result_update(lose_score)
+            print(players[(i+1)%2].show_policy(players[(i+1)%2].old_state))
     else:
         print("CPU turn... ")
         print(players[player].show_policy(env.board.board))
         reward, done, retry = players[player].act()
+        print(players[player].show_policy(players[player].old_state))
         if retry:
             i -= 1
         else:
             print("CPU turn: "+str(agent.now_line)+", "+str(agent.now_col))
         if done:
             print("cpu win!")
-            win_score = 50
+            win_score = 1
             players[player].result_update(win_score)
             exit()
     i += 1
+    if env.steps <= 0:
+        done = True
+        print("Draw game")
+        agent.result_update(-5)
+
 
 def save_model(agent):
     model_dir = "Model"

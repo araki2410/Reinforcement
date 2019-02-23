@@ -28,15 +28,14 @@ class Board():
 
 
 class Gomoku():
-    def __init__(self, col_size=19, line_size=19, length=5, reward_type="count"):
+    def __init__(self, col_size=19, line_size=19, length=5):
         self.col_size = col_size
         self.line_size = line_size
         self.board = Board(self.col_size, self.line_size)
         self.steps = self.line_size * self.col_size
         self.length = length
-        self.reward_type = reward_type
-        self.winner_rate = 50
-        self.count_rate = 10
+        self.winner_rate = line_size*col_size
+        self.count_rate = 0.2
 
     def actions(self):
         actions = []
@@ -45,13 +44,7 @@ class Gomoku():
                 actions.append([i, j])
         return actions
 
-    def reward_calc(self, wins, counts):
-        if self.reward_type == "count":
-            reward = wins * self.winner_rate + counts * self.count_rate
-        else:
-            reward = wins
-        return reward
-    
+
     def step(self, line, col, player):
         self.steps -= 1
         done = False
@@ -61,7 +54,7 @@ class Gomoku():
             done = True
         else:
             wins, counts, retry = self.action(line, col, player)
-            reward = self.reward_calc(wins, counts)
+            reward = wins
             if wins >= 1:
                 done = True
         if retry:
