@@ -31,7 +31,7 @@ players = ["you", agent]
 done = False
 
 
-print('If you put [H], \n\n - H -\n - - -\n - - -\n\nyou type "1,2"\n===========\nstart')
+print('How to\n put : X,X\n back: b\nIf you put [H], \n\n - H -\n - - -\n - - -\n\nyou type "1,2"\n===========\nstart')
 #exit()
 while not done:
     player = i % 2
@@ -42,6 +42,10 @@ while not done:
         print("your turn: ")
         try:
             action = input()
+            if action == "b":
+                env.back_step()
+                env.back_step()
+
             line, col = action.split(",")
             line, col = int(line)-1, int(col)-1
             if line <= line_size-1 and col <= col_size-1:

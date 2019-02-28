@@ -36,6 +36,9 @@ class Gomoku():
         self.length = length
         self.winner_rate = line_size*col_size
         self.count_rate = 0.2
+        self.record = []
+
+
 
     def actions(self):
         actions = []
@@ -45,7 +48,7 @@ class Gomoku():
         return actions
 
 
-    def step(self, line, col, player):
+    def step(self, line, col, player, rec=True):
         self.steps -= 1
         done = False
         retry= False
@@ -53,28 +56,43 @@ class Gomoku():
         if self.steps < 0:
             done = True
         else:
-            wins, counts, retry = self.action(line, col, player)
+            retry = self.action(line, col, player)
+            wins, counts = self.victory_check(line, col)
             reward = wins
+                        
             if wins >= 1:
                 done = True
-        if retry:
-            self.steps += 1
-                
+            if retry:
+                self.steps += 1
+            else:
+                if rec:
+                    self.record.append([line, col, player])
+
         return reward, done, retry
         
+    def back_step(self):
+        print(self.record)
+        if len(self.record) > 0:
+            self.steps += 1
+            self.record.pop(-1)
+            
+            self.reset()
+            for line, col, player in self.record:
+                self.step(line, col, player, False)
+            
+
+
+        
+
     def action(self, line_num, col_num, player=1):
         retry = False
         if self.board.board[line_num][col_num] == 0:
             self.board.put_stone(line_num, col_num, player)
         else:
-            #print("cant put here!")
+            ## print("cant put here!")
             retry = True
-            wins = -1
-            counts = 0
-            return wins, counts, retry
-        wins, counts = self.victory_check(line_num, col_num)
 
-        return wins, counts, retry
+        return retry
         
     def victory_check(self, line_num, col_num):
         player = self.board.board[line_num][col_num]
